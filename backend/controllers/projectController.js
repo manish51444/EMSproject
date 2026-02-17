@@ -110,23 +110,73 @@ export const createProject = async (req, res) => {
 
     const { name, key, description, members, department, technologies, clouds } = req.body;
 
-    // Check if project key exists in same organization
-    const projectExists = await Project.findOne({ 
-      key, 
-      organization: user.organization 
+    // Normalize project key for duplicate check and storage
+    const keyNormalized = (key || '').toString().toUpperCase().trim();
+
+    const projectExists = await Project.findOne({
+      key: keyNormalized,
+      organization: user.organization,
     });
 
     if (projectExists) {
       return res.status(400).json({ message: 'Project key already exists in your organization' });
     }
 
+    // Ensure project creator is always in members array
+    const membersArray = Array.isArray(members) && members.length > 0
+      ? [...new Set([req.user._id.toString(), ...members.map(m => m.toString())])]
+      : [req.user._id.toString()];
+
+    // Auto-assign by creator role: Admin → add a Manager; Manager → add a Developer
+    if (user.role === 'admin') {
+      const managerQuery = {
+        organization: user.organization,
+        role: 'manager',
+        _id: { $ne: req.user._id },
+      };
+      if (department) {
+        const deptArr = Array.isArray(department) ? department : [department];
+        managerQuery.department = { $in: deptArr };
+      }
+      let managerUser = await User.findOne(managerQuery);
+      if (!managerUser && department) {
+        managerUser = await User.findOne({
+          organization: user.organization,
+          role: 'manager',
+          _id: { $ne: req.user._id },
+        });
+      }
+      if (managerUser) membersArray.push(managerUser._id.toString());
+    } else if (user.role === 'manager') {
+      const devQuery = {
+        organization: user.organization,
+        role: 'developer',
+        _id: { $ne: req.user._id },
+      };
+      if (department) {
+        const deptArr = Array.isArray(department) ? department : [department];
+        devQuery.department = { $in: deptArr };
+      }
+      let devUser = await User.findOne(devQuery);
+      if (!devUser && department) {
+        devUser = await User.findOne({
+          organization: user.organization,
+          role: 'developer',
+          _id: { $ne: req.user._id },
+        });
+      }
+      if (devUser) membersArray.push(devUser._id.toString());
+    }
+
+    const uniqueMembersArray = [...new Set(membersArray)];
+
     const projectData = {
       name,
-      key,
+      key: keyNormalized,
       description,
       lead: req.user._id,
       organization: user.organization,
-      members: members || [],
+      members: uniqueMembersArray,
     };
 
     // Add department and related fields
@@ -210,6 +260,42 @@ export const updateProject = async (req, res) => {
   } catch (error) {
     const { sendErrorResponse } = await import('../utils/errorResponse.js');
     sendErrorResponse(res, 500, 'Failed to update project', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
+  }
+};
+
+// @desc    Check if project key exists
+// @route   GET /api/projects/check-key
+// @access  Private
+export const checkProjectKey = async (req, res) => {
+  try {
+    // Get user's organization
+    const user = await User.findById(req.user._id);
+    if (!user.organization) {
+      return res.status(400).json({ message: 'User must belong to an organization' });
+    }
+
+    const { key } = req.query;
+    
+    if (!key) {
+      return res.status(400).json({ message: 'Project key is required' });
+    }
+
+    // Check if project key exists in same organization
+    const projectExists = await Project.findOne({ 
+      key: key.toUpperCase().trim(), 
+      organization: user.organization 
+    });
+
+    if (projectExists) {
+      return res.json({ 
+        exists: true, 
+        message: 'Project key already exists in your organization' 
+      });
+    }
+
+    res.json({ exists: false });
+  } catch (error) {
+    sendErrorResponse(res, 500, 'Failed to check project key', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }
 };
 

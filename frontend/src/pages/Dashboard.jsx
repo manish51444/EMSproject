@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { getIssues, getProjects, createIssue } from '../services/api';
@@ -12,14 +12,28 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
 
-  const { data: projectsResponse, isLoading: projectsLoading } = useQuery({
+  const { data: projectsResponse, isLoading: projectsLoading, error: projectsError } = useQuery({
     queryKey: ['projects'],
     queryFn: () => getProjects().then((res) => res.data),
+    retry: false,
+    onError: (error) => {
+      console.error('Failed to fetch projects:', error);
+      if (error.response?.status !== 400) {
+        toast.error(error.response?.data?.message || 'Failed to load projects');
+      }
+    },
   });
 
-  const { data: issuesResponse, refetch, isLoading: issuesLoading } = useQuery({
+  const { data: issuesResponse, refetch, isLoading: issuesLoading, error: issuesError } = useQuery({
     queryKey: ['issues'],
     queryFn: () => getIssues().then((res) => res.data),
+    retry: false,
+    onError: (error) => {
+      console.error('Failed to fetch issues:', error);
+      if (error.response?.status !== 400) {
+        toast.error(error.response?.data?.message || 'Failed to load issues');
+      }
+    },
   });
 
   // Extract arrays from paginated responses
@@ -42,7 +56,7 @@ const Dashboard = () => {
       setIsModalOpen(false);
       refetch();
     } catch (error) {
-      toast.error('Failed to create issue');
+      toast.error(error.response?.data?.message || 'Failed to create issue');
     }
   };
 
@@ -69,11 +83,16 @@ const Dashboard = () => {
     },
   ];
 
-  // Format department name for display
+  // Format department name for display (handles string or array from API)
   const formatDepartment = (dept) => {
     if (!dept) return '';
-    return dept.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const str = Array.isArray(dept) ? (dept[0] || '') : dept;
+    if (typeof str !== 'string') return '';
+    return str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
+
+  const hasOrganizationError = projectsError?.response?.data?.message?.includes('organization') || 
+                                issuesError?.response?.data?.message?.includes('organization');
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -93,11 +112,48 @@ const Dashboard = () => {
         <button
           onClick={() => setIsModalOpen(true)}
           className="btn btn-primary flex items-center space-x-2"
+          disabled={projects.length === 0}
         >
           <Plus size={20} />
           <span>Create Issue</span>
         </button>
       </div>
+
+      {/* Info: Issues visible but no projects in list */}
+      {!projectsLoading && !issuesLoading && projects.length === 0 && issues.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm text-blue-800">
+            <p className="font-medium mb-1">Why don’t I see any projects?</p>
+            <p className="mb-1">
+              You see issues you’re assigned to or reported. The <strong>Projects</strong> list only shows projects you’re a member of (or, for managers, projects in your department).
+            </p>
+            <p>
+              <strong>Which project is an issue in?</strong> The issue key tells you: e.g. <strong>LPA-1</strong> → project key is <strong>LPA</strong>. Each issue below also shows its project name.
+            </p>
+            {user?.role === 'manager' && (
+              <p className="mt-2 text-blue-700">
+                Managers: set your department in your profile to see projects in the sidebar.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Organization Error Banner */}
+      {hasOrganizationError && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-yellow-800 mb-1">
+              Organization Required
+            </h3>
+            <p className="text-sm text-yellow-700">
+              You need to be added to an organization to view projects and issues. Please contact your administrator.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -107,6 +163,20 @@ const Dashboard = () => {
               <SkeletonLoader type="text" className="w-full" />
             </div>
           ))
+        ) : projectsError && !hasOrganizationError ? (
+          <div className="col-span-4 card">
+            <div className="text-center py-4">
+              <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+              <p className="text-red-600 mb-2 font-medium">
+                {projectsError.response?.data?.message || 'Failed to load projects'}
+              </p>
+              {projectsError.response?.data?.message?.includes('organization') && (
+                <p className="text-sm text-gray-500">
+                  Please contact your administrator to be added to an organization
+                </p>
+              )}
+            </div>
+          </div>
         ) : (
           getStats().map((stat, index) => (
             <div key={index} className="card">
@@ -134,33 +204,70 @@ const Dashboard = () => {
             <div className="space-y-4">
               <SkeletonLoader type="text" count={3} />
             </div>
+          ) : issuesError ? (
+            <div className="text-center py-8">
+              <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+              <p className="text-red-600 mb-2 font-medium">
+                {issuesError.response?.data?.message || 'Failed to load issues'}
+              </p>
+              {issuesError.response?.data?.message?.includes('organization') && (
+                <p className="text-sm text-gray-500">
+                  Please contact your administrator to be added to an organization
+                </p>
+              )}
+            </div>
           ) : issues.length > 0 ? (
-            issues.slice(0, 5).map((issue) => (
-              <Link
-                key={issue._id}
-                to={`/issues/${issue._id}`}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
-                    {issue.key}
-                  </span>
-                  <span className="text-sm text-gray-700">{issue.title}</span>
-                </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${issue.status === 'done'
-                      ? 'bg-green-100 text-green-800'
-                      : issue.status === 'in_progress'
-                        ? 'bg-primary-100 text-primary-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
+            issues.slice(0, 5).map((issue) => {
+              const projectName = issue.projectId?.name || issue.projectId?.key || (issue.key && issue.key.split('-')[0]) || '';
+              return (
+                <Link
+                  key={issue._id}
+                  to={`/issues/${issue._id}`}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
                 >
-                  {issue.status.replace('_', ' ')}
-                </span>
-              </Link>
-            ))
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-1">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
+                        {issue.key}
+                      </span>
+                      <span className="text-sm text-gray-700">{issue.title}</span>
+                    </div>
+                    {projectName && (
+                      <span className="text-xs text-gray-500">
+                        Project: {projectName}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${issue.status === 'done'
+                        ? 'bg-green-100 text-green-800'
+                        : issue.status === 'in_progress'
+                          ? 'bg-primary-100 text-primary-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                  >
+                    {issue.status.replace('_', ' ')}
+                  </span>
+                </Link>
+              );
+            })
           ) : (
-            <p className="text-gray-500 text-center py-8">No issues yet</p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-2">No issues yet</p>
+              {projects.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Create a project first to start adding issues
+                </p>
+              )}
+              {projects.length > 0 && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Create your first issue
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

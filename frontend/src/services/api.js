@@ -109,9 +109,20 @@ export const disconnectIntegration = (type) => api.post('/microsoft/disconnect',
 export const getProjects = () => api.get('/projects');
 export const getProject = (id) => api.get(`/projects/${id}`);
 export const getProjectStats = (id) => api.get(`/projects/${id}/stats`);
+export const checkProjectKey = (key) => api.get('/projects/check-key', { params: { key } });
 export const createProject = (data) => api.post('/projects', data);
 export const updateProject = (id, data) => api.put(`/projects/${id}`, data);
 export const deleteProject = (id) => api.delete(`/projects/${id}`);
+
+// Daily tasks (MOM)
+export const getDailyTasks = (projectId, params) =>
+  api.get(`/projects/${projectId}/daily-tasks`, { params });
+export const createDailyTask = (projectId, data) =>
+  api.post(`/projects/${projectId}/daily-tasks`, data);
+export const updateDailyTask = (projectId, taskId, data) =>
+  api.put(`/projects/${projectId}/daily-tasks/${taskId}`, data);
+export const deleteDailyTask = (projectId, taskId) =>
+  api.delete(`/projects/${projectId}/daily-tasks/${taskId}`);
 
 // Issues
 export const getIssues = (params) => api.get('/issues', { params });

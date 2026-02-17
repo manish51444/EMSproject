@@ -5,6 +5,7 @@ import {
   createProject,
   updateProject,
   deleteProject,
+  checkProjectKey,
 } from '../controllers/projectController.js';
 import { getProjectStats } from '../controllers/projectStatsController.js';
 import { getForms, createForm } from '../controllers/formController.js';
@@ -16,7 +17,15 @@ import {
   validateUpdateProject,
   validateMongoId,
   validatePagination,
+  validateCreateDailyTask,
+  validateUpdateDailyTask,
 } from '../middleware/validation.js';
+import {
+  getDailyTasks,
+  createDailyTask,
+  updateDailyTask,
+  deleteDailyTask,
+} from '../controllers/dailyTaskController.js';
 
 const router = express.Router();
 
@@ -24,6 +33,10 @@ router
   .route('/')
   .get(protect, validatePagination, getProjects)
   .post(protect, validateCreateProject, createProject);
+
+router
+  .route('/check-key')
+  .get(protect, checkProjectKey);
 
 router
   .route('/:id/stats')
@@ -38,6 +51,16 @@ router
   .route('/:projectId/reports')
   .get(protect, validateMongoId('projectId'), checkProjectAccess, getReports)
   .post(protect, validateMongoId('projectId'), checkProjectAccess, createReport);
+
+router
+  .route('/:projectId/daily-tasks')
+  .get(protect, validateMongoId('projectId'), checkProjectAccess, getDailyTasks)
+  .post(protect, validateMongoId('projectId'), checkProjectAccess, validateCreateDailyTask, createDailyTask);
+
+router
+  .route('/:projectId/daily-tasks/:taskId')
+  .put(protect, validateMongoId('projectId'), validateMongoId('taskId'), checkProjectAccess, validateUpdateDailyTask, updateDailyTask)
+  .delete(protect, validateMongoId('projectId'), validateMongoId('taskId'), checkProjectAccess, deleteDailyTask);
 
 router
   .route('/:id')

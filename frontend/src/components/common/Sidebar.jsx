@@ -8,9 +8,13 @@ import { useAuth } from '../../context/AuthContext';
 const Sidebar = ({ isCollapsed, onToggle }) => {
   const location = useLocation();
   const { user } = useAuth();
-  const { data: projectsResponse } = useQuery({
+  const { data: projectsResponse, isLoading, error } = useQuery({
     queryKey: ['projects'],
     queryFn: () => getProjects().then((res) => res.data),
+    retry: false,
+    onError: (error) => {
+      console.error('Failed to fetch projects:', error);
+    },
   });
   
   const isAdmin = user?.role === 'admin';
@@ -32,25 +36,29 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
         >
           <ChevronRight size={20} className="text-gray-600" />
         </button>
-        {projects.slice(0, 3).map((project) => {
-          const isActive = location.pathname === `/projects/${project._id}/board`;
-          return (
-            <Link
-              key={project._id}
-              to={`/projects/${project._id}/board`}
-              className={`p-2 mb-2 rounded-lg transition-colors ${
-                isActive ? 'bg-primary-50' : 'hover:bg-gray-100'
-              }`}
-              title={project.name}
-            >
-              <div className="w-6 h-6 bg-purple-600 rounded flex items-center justify-center">
-                <span className="text-white text-xs font-bold">
-                  {project.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+        {isLoading ? (
+          <div className="w-6 h-6 bg-gray-200 rounded animate-pulse mb-2" />
+        ) : error ? null : projects.length === 0 ? null : (
+          projects.slice(0, 3).map((project) => {
+            const isActive = location.pathname === `/projects/${project._id}/board`;
+            return (
+              <Link
+                key={project._id}
+                to={`/projects/${project._id}/board`}
+                className={`p-2 mb-2 rounded-lg transition-colors ${
+                  isActive ? 'bg-primary-50' : 'hover:bg-gray-100'
+                }`}
+                title={project.name}
+              >
+                <div className="w-6 h-6 bg-purple-600 rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">
+                    {project.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              </Link>
+            );
+          })
+        )}
       </aside>
     );
   }
@@ -63,9 +71,13 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Projects
             </h2>
-            <button className="p-1 hover:bg-gray-100 rounded">
+            <Link
+              to="/projects/create"
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Create new project"
+            >
               <Plus size={14} className="text-gray-500" />
-            </button>
+            </Link>
           </div>
           <button
             onClick={onToggle}
@@ -79,31 +91,69 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             RECENT
           </div>
-          {projects.slice(0, 5).map((project) => {
-            const isActive = location.pathname === `/projects/${project._id}/board`;
-            return (
-              <Link
-                key={project._id}
-                to={`/projects/${project._id}/board`}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <div className="w-5 h-5 bg-purple-600 rounded flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs font-bold">
-                    {project.name.charAt(0).toUpperCase()}
-                  </span>
+          {isLoading ? (
+            <div className="px-3 py-2 text-xs text-gray-500">Loading projects...</div>
+          ) : error ? (
+            <div className="px-3 py-2 text-xs text-red-600">
+              {error.response?.data?.message || 'Failed to load projects'}
+              {error.response?.data?.message?.includes('organization') && (
+                <div className="mt-1 text-gray-400 text-xs">
+                  Contact admin to be added to an organization
                 </div>
-                <span className="text-sm flex-1 truncate">{project.name}</span>
+              )}
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-gray-500">
+              <div>No projects found</div>
+              {user?.role === 'developer' && (
+                <div className="mt-1 text-gray-400">
+                  You need to be added to a project
+                </div>
+              )}
+              {user?.role === 'manager' && !user?.department && (
+                <div className="mt-1 text-gray-400">
+                  Please set your department in profile
+                </div>
+              )}
+              <Link
+                to="/projects/create"
+                className="mt-2 block text-primary-600 hover:underline text-xs"
+              >
+                Create your first project
               </Link>
-            );
-          })}
-          {projects && projects.length > 5 && (
-            <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
-              View all projects
-            </button>
+            </div>
+          ) : (
+            <>
+              {projects.slice(0, 5).map((project) => {
+                const isActive = location.pathname === `/projects/${project._id}/board`;
+                return (
+                  <Link
+                    key={project._id}
+                    to={`/projects/${project._id}/board`}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-primary-50 text-primary-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="w-5 h-5 bg-purple-600 rounded flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-xs font-bold">
+                        {project.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-sm flex-1 truncate">{project.name}</span>
+                  </Link>
+                );
+              })}
+              {projects && projects.length > 5 && (
+                <Link
+                  to="/projects"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg block"
+                >
+                  View all projects
+                </Link>
+              )}
+            </>
           )}
         </div>
         

@@ -101,30 +101,26 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
   const filterUsersByProject = () => {
     let filtered = users;
 
-    // Managers can assign to anyone - no department restrictions
-    // Only filter by project requirements if project is selected
-    if (selectedProject && selectedProject.department) {
+    // Managers and admins can assign to anyone in the org (cross-department)
+    const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
+
+    if (isManagerOrAdmin) {
+      // Show all users except managers/admins in assignee list
+      filtered = filtered.filter((u) => u.role !== 'manager' && u.role !== 'admin');
+    } else if (selectedProject && selectedProject.department) {
+      // Non-managers: only show users whose department matches the project
       filtered = filtered.filter((u) => {
-        // Managers and admins should not be in assignee list
         if (u.role === 'manager' || u.role === 'admin') {
           return false;
         }
-
-        // If user has no department, don't filter them out (for backward compatibility)
         if (!u.department || (Array.isArray(u.department) && u.department.length === 0)) {
           return true;
         }
-
-        // User must match project department
-        // Handle both array (new) and string (old) department formats
         const userDepartments = Array.isArray(u.department) ? u.department : [u.department];
         return userDepartments.includes(selectedProject.department);
       });
     } else {
-      // If no project selected, show all users except managers/admins
-      filtered = filtered.filter((u) => {
-        return u.role !== 'manager' && u.role !== 'admin';
-      });
+      filtered = filtered.filter((u) => u.role !== 'manager' && u.role !== 'admin');
     }
 
     setFilteredUsers(filtered);

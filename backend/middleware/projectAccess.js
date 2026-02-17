@@ -1,4 +1,6 @@
 import Project from '../models/Project.js';
+import User from '../models/User.js';
+import { sendErrorResponse } from '../utils/errorResponse.js';
 
 /**
  * Middleware to check if user has access to a project
@@ -9,13 +11,23 @@ export const checkProjectAccess = async (req, res, next) => {
     const projectId = req.params.id || req.params.projectId;
     
     if (!projectId) {
-      return res.status(400).json({ message: 'Project ID is required' });
+      return sendErrorResponse(res, 400, 'Project ID is required', req.id);
     }
 
-    const project = await Project.findById(projectId);
+    // Get user's organization first
+    const user = await User.findById(req.user._id);
+    if (!user.organization) {
+      return sendErrorResponse(res, 400, 'User must belong to an organization', req.id);
+    }
+
+    // Check project exists and belongs to user's organization
+    const project = await Project.findOne({
+      _id: projectId,
+      organization: user.organization
+    });
     
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return sendErrorResponse(res, 404, 'Project not found in your organization', req.id);
     }
 
     // Admin and Manager have access to all projects
@@ -31,15 +43,13 @@ export const checkProjectAccess = async (req, res, next) => {
     );
 
     if (!isLead && !isMember) {
-      return res.status(403).json({
-        message: 'You do not have access to this project',
-      });
+      return sendErrorResponse(res, 403, 'You do not have access to this project', req.id);
     }
 
     req.project = project;
     next();
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return sendErrorResponse(res, 500, 'Failed to check project access', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }
 };
 
@@ -49,7 +59,7 @@ export const checkProjectAccess = async (req, res, next) => {
 export const checkProjectLead = async (req, res, next) => {
   try {
     if (!req.project) {
-      return res.status(500).json({ message: 'Project not found in request' });
+      return sendErrorResponse(res, 500, 'Project not found in request', req.id);
     }
 
     const isAdmin = req.user.role === 'admin';
@@ -57,14 +67,12 @@ export const checkProjectLead = async (req, res, next) => {
     const isLead = req.project.lead.toString() === req.user._id.toString();
 
     if (!isAdmin && !isManager && !isLead) {
-      return res.status(403).json({
-        message: 'Only project lead, manager, or admin can perform this action',
-      });
+      return sendErrorResponse(res, 403, 'Only project lead, manager, or admin can perform this action', req.id);
     }
 
     next();
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return sendErrorResponse(res, 500, 'Failed to check project lead access', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }
 };
 

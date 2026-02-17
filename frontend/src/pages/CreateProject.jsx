@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronDown, FolderKanban, LayoutGrid, List, Columns } from 'lucide-react';
-import { createProject } from '../services/api';
+import { ChevronRight, ChevronDown, FolderKanban, LayoutGrid, List, Columns, CheckCircle2, XCircle, Loader2, Users } from 'lucide-react';
+import { createProject, checkProjectKey, getUsers } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import {
@@ -49,9 +49,18 @@ const CreateProject = () => {
     department: '',
     technologies: [],
     clouds: [],
+    members: [],
   });
   const [showMore, setShowMore] = useState(false);
+  const [orgUsers, setOrgUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [keyValidation, setKeyValidation] = useState({
+    checking: false,
+    exists: false,
+    message: '',
+  });
   const navigate = useNavigate();
+  const keyCheckTimeoutRef = useRef(null);
 
   // Auto-populate department for managers
   useEffect(() => {
@@ -66,6 +75,67 @@ const CreateProject = () => {
       }));
     }
   }, [user]);
+
+  // Fetch org users when "Show more" is expanded (for team member picker)
+  useEffect(() => {
+    if (!showMore) return;
+    let cancelled = false;
+    setLoadingUsers(true);
+    getUsers()
+      .then((res) => {
+        if (!cancelled) setOrgUsers(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error('Failed to load team members');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingUsers(false);
+      });
+    return () => { cancelled = true; };
+  }, [showMore]);
+
+  // Check project key availability
+  const validateProjectKey = async (key) => {
+    if (!key || key.length < 2) {
+      setKeyValidation({ checking: false, exists: false, message: '' });
+      return;
+    }
+
+    // Clear previous timeout
+    if (keyCheckTimeoutRef.current) {
+      clearTimeout(keyCheckTimeoutRef.current);
+    }
+
+    // Set checking state
+    setKeyValidation({ checking: true, exists: false, message: '' });
+
+    // Debounce the API call
+    keyCheckTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await checkProjectKey(key);
+        setKeyValidation({
+          checking: false,
+          exists: response.data.exists,
+          message: response.data.exists ? response.data.message : '',
+        });
+      } catch (error) {
+        setKeyValidation({
+          checking: false,
+          exists: false,
+          message: '',
+        });
+      }
+    }, 500); // 500ms debounce
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (keyCheckTimeoutRef.current) {
+        clearTimeout(keyCheckTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get available options based on selected department
   const getAvailableOptions = () => {
@@ -102,6 +172,16 @@ const CreateProject = () => {
     }
   };
 
+  const handleMemberToggle = (userId) => {
+    const id = userId.toString();
+    setFormData((prev) => ({
+      ...prev,
+      members: prev.members.includes(id)
+        ? prev.members.filter((m) => m !== id)
+        : [...prev.members, id],
+    }));
+  };
+
   const selectedTemplate = templates.find((t) => t.id === formData.template);
 
   const handleSubmit = async (e) => {
@@ -126,6 +206,16 @@ const CreateProject = () => {
       return;
     }
 
+    if (keyValidation.exists) {
+      toast.error('Project key already exists. Please choose a different key.');
+      return;
+    }
+
+    if (keyValidation.checking) {
+      toast.error('Please wait while we check the project key availability.');
+      return;
+    }
+
     try {
       const projectData = {
         name: formData.name,
@@ -138,6 +228,10 @@ const CreateProject = () => {
         projectData.clouds = formData.clouds;
       } else {
         projectData.technologies = formData.technologies;
+      }
+
+      if (formData.members && formData.members.length > 0) {
+        projectData.members = formData.members;
       }
 
       const response = await createProject(projectData);
@@ -278,19 +372,49 @@ const CreateProject = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Key *
                       </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.key}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            key: e.target.value.toUpperCase().slice(0, 10),
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        maxLength={10}
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={formData.key}
+                          onChange={(e) => {
+                            const newKey = e.target.value.toUpperCase().slice(0, 10);
+                            setFormData({
+                              ...formData,
+                              key: newKey,
+                            });
+                            validateProjectKey(newKey);
+                          }}
+                          className={`w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 ${
+                            keyValidation.exists
+                              ? 'border-red-300 focus:ring-red-500'
+                              : formData.key.length >= 2 && !keyValidation.checking && !keyValidation.exists
+                              ? 'border-green-300 focus:ring-green-500'
+                              : 'border-gray-300 focus:ring-primary-500'
+                          }`}
+                          maxLength={10}
+                          pattern="[A-Z0-9]+"
+                          title="Project key must contain only uppercase letters and numbers"
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {keyValidation.checking ? (
+                            <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                          ) : keyValidation.exists ? (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          ) : formData.key.length >= 2 ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : null}
+                        </div>
+                      </div>
+                      {keyValidation.exists && (
+                        <p className="mt-1 text-sm text-red-600">{keyValidation.message}</p>
+                      )}
+                      {formData.key.length >= 2 && !keyValidation.checking && !keyValidation.exists && (
+                        <p className="mt-1 text-sm text-green-600">Project key is available</p>
+                      )}
+                      {formData.key.length > 0 && formData.key.length < 2 && (
+                        <p className="mt-1 text-sm text-gray-500">Project key must be at least 2 characters</p>
+                      )}
                     </div>
 
                     <div>
@@ -414,6 +538,60 @@ const CreateProject = () => {
                         <option value="limited">Limited</option>
                         <option value="private">Private</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Users className="w-4 h-4" />
+                        Assign team members
+                      </label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Select users to add as project members. You are automatically the project lead.
+                      </p>
+                      {loadingUsers ? (
+                        <div className="flex items-center gap-2 py-3 text-sm text-gray-500">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading team members…
+                        </div>
+                      ) : (
+                        <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 space-y-2">
+                          {orgUsers
+                            .filter((u) => u._id !== user?.id && u._id !== user?._id)
+                            .map((u) => {
+                              const uid = u._id?.toString?.() ?? u._id;
+                              const isSelected = formData.members.includes(uid);
+                              return (
+                                <label
+                                  key={uid}
+                                  className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
+                                    isSelected ? 'bg-primary-50 border border-primary-200' : 'hover:bg-white'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleMemberToggle(uid)}
+                                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                  />
+                                  <span className="text-sm text-gray-700">
+                                    {u.name || u.email || 'Unknown'}
+                                    {u.role && (
+                                      <span className="ml-2 text-xs text-gray-500">({u.role})</span>
+                                    )}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          {orgUsers.filter((u) => u._id !== user?.id && u._id !== user?._id).length === 0 && !loadingUsers && (
+                            <p className="text-sm text-gray-500 py-2">No other users in your organization.</p>
+                          )}
+                        </div>
+                      )}
+                      {formData.members.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formData.members.length} member{formData.members.length !== 1 ? 's' : ''} selected
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

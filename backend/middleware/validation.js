@@ -340,3 +340,36 @@ export const validateRejectIssue = [
   handleValidationErrors,
 ];
 
+// Daily task (MOM) validation
+export const validateCreateDailyTask = [
+  body('date')
+    .optional()
+    .isISO8601()
+    .withMessage('Invalid date format'),
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Title must be less than 200 characters'),
+  body('content')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Content must be less than 5000 characters'),
+  handleValidationErrors,
+];
+
+export const validateUpdateDailyTask = [
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Title must be less than 200 characters'),
+  body('content')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Content must be less than 5000 characters'),
+  handleValidationErrors,
+];
+

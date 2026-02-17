@@ -8,6 +8,7 @@ import FormsView from '../components/forms/FormsView';
 import AttachmentsView from '../components/attachments/AttachmentsView';
 import IssuesView from '../components/issues/IssuesView';
 import ReportsView from '../components/reports/ReportsView';
+import DailyTasksView from '../components/dailyTasks/DailyTasksView';
 import BacklogView from '../components/backlog/BacklogView'; // Import
 import ShortcutsDropdown from '../components/shortcuts/ShortcutsDropdown';
 import AddShortcutModal from '../components/shortcuts/AddShortcutModal';
@@ -30,6 +31,7 @@ import {
   BarChart3,
   Archive,
   ListTodo,
+  ClipboardList,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import IssueModal from '../components/issues/IssueModal';
@@ -143,6 +145,7 @@ const ProjectBoard = () => {
     { id: 'attachments', label: 'Attachments', icon: Paperclip },
     { id: 'issues', label: 'Issues', icon: ListTodo },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'daily-tasks', label: 'Daily Tasks', icon: ClipboardList },
     { id: 'archived', label: 'Archived Iss', icon: Archive },
   ];
 
@@ -395,6 +398,8 @@ const ProjectBoard = () => {
           <IssuesView />
         ) : activeView === 'reports' ? (
           <ReportsView />
+        ) : activeView === 'daily-tasks' ? (
+          <DailyTasksView projectId={id} />
         ) : activeView === 'archived' ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <p className="text-gray-600">Archived issues view coming soon...</p>
