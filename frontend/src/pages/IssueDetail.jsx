@@ -121,6 +121,30 @@ const IssueDetail = () => {
     queryFn: () => getUsers().then((res) => res.data),
   });
 
+  // Permission: who can edit assignees (mirrors backend canModifyIssue logic)
+  const canEditAssignees = (() => {
+    if (!issue || !user) return false;
+    if (user.role === 'admin' || user.role === 'manager') return true;
+
+    const assigneesArray =
+      issue.assignees && issue.assignees.length > 0
+        ? issue.assignees
+        : issue.assignee
+        ? [issue.assignee]
+        : [];
+
+    const isAssignee = assigneesArray.some(
+      (a) => (a?._id || a) === (user._id || user.id)
+    );
+    const reporterId = issue.reporter?._id || issue.reporter;
+    const isReporter = reporterId && reporterId.toString() === (user._id || user.id);
+
+    const projectLeadId = issue.projectId?.lead?._id || issue.projectId?.lead;
+    const isLead = projectLeadId && projectLeadId.toString() === (user._id || user.id);
+
+    return isAssignee || isReporter || isLead;
+  })();
+
   // Join project room for real-time updates
   useEffect(() => {
     if (issue?.projectId) {
@@ -256,10 +280,20 @@ const IssueDetail = () => {
   });
 
   const assignMutation = useMutation({
-    mutationFn: (assigneeIds) => updateIssue(id, { assignees: Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds] }),
+    mutationFn: (assigneeIds) =>
+      updateIssue(id, {
+        assignees: Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds],
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries(['issue', id]);
       toast.success('Assignees updated');
+    },
+    onError: (error) => {
+      const msg =
+        error.response?.status === 403
+          ? 'You do not have permission to change assignees for this issue.'
+          : error.response?.data?.message || 'Failed to update assignees';
+      toast.error(msg);
     },
   });
 
@@ -1028,39 +1062,57 @@ const IssueDetail = () => {
                           {assignee?.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <span className="text-sm text-gray-900 flex-1">{assignee?.name || 'Unknown'}</span>
-                        <button
-                          onClick={() => {
-                            const currentAssignees = assigneesList.map(a => a?._id || a).filter(Boolean);
-                            const newAssignees = currentAssignees.filter(id => id !== (assignee?._id || assignee));
-                            assignMutation.mutate(newAssignees);
-                          }}
-                          className="text-xs text-red-600 hover:text-red-800"
-                          title="Remove assignee"
-                        >
-                          ×
-                        </button>
+                        {canEditAssignees && (
+                          <button
+                            onClick={() => {
+                              if (!window.confirm('Are you sure you want to change assignees for this issue?')) {
+                                return;
+                              }
+                              const currentAssignees = assigneesList.map(a => a?._id || a).filter(Boolean);
+                              const newAssignees = currentAssignees.filter(id => id !== (assignee?._id || assignee));
+                              assignMutation.mutate(newAssignees);
+                            }}
+                            className="text-xs text-red-600 hover:text-red-800"
+                            title="Remove assignee"
+                          >
+                            ×
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <button
-                    onClick={() => assignMutation.mutate([user?._id])}
-                    className="text-sm text-primary-600 hover:underline"
-                  >
-                    Assign to me
-                  </button>
+                  canEditAssignees && user ? (
+                    <button
+                      onClick={() => {
+                        if (!window.confirm('Assign this issue to yourself?')) {
+                          return;
+                        }
+                        assignMutation.mutate([user._id || user.id]);
+                      }}
+                      className="text-sm text-primary-600 hover:underline"
+                    >
+                      Assign to me
+                    </button>
+                  ) : null
                 );
               })()}
               {users && (
                 <select
+                  disabled={!canEditAssignees}
                   multiple
                   onChange={(e) => {
+                    if (!window.confirm('Are you sure you want to change assignees for this issue?')) {
+                      // Reset selection UI by forcing a re-render; just return here and let React keep previous value from props
+                      e.target.value = '';
+                      return;
+                    }
                     const selectedAssignees = Array.from(e.target.selectedOptions, option => option.value);
                     if (selectedAssignees.length > 0) {
                       assignMutation.mutate(selectedAssignees);
                     }
                   }}
-                  className="w-full mt-2 px-2 py-1 border border-gray-300 rounded text-sm min-h-[80px]"
+                  className="w-full mt-2 px-2 py-1 border border-gray-300 rounded text-sm min-h-[80px] disabled:bg-gray-100 disabled:text-gray-400"
                   size={Math.min(users.length + 1, 5)}
                 >
                   {users.map((u) => {

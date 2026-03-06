@@ -141,14 +141,20 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
 
     if (user && (await user.matchPassword(password))) {
+      const token = generateToken(user._id);
+      const userWithOrg = await User.findById(user._id)
+        .select('-password')
+        .populate('organization', 'name slug domain');
+      const isProduction = process.env.NODE_ENV === 'production';
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
       res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        department: user.department,
-        token: generateToken(user._id),
+        ...userWithOrg.toObject(),
+        token,
       });
     } else {
       return sendErrorResponse(res, 401, 'Invalid email or password', req.id);
@@ -160,6 +166,14 @@ export const login = async (req, res) => {
     }
     sendErrorResponse(res, 500, 'Failed to login', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }
+};
+
+// @desc    Logout - clear auth cookie
+// @route   POST /api/auth/logout
+// @access  Private
+export const logout = async (req, res) => {
+  res.cookie('token', '', { httpOnly: true, maxAge: 0 });
+  res.json({ message: 'Logged out' });
 };
 
 // @desc    Get current user

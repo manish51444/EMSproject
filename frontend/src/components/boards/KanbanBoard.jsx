@@ -4,15 +4,15 @@ import BoardColumn from './BoardColumn';
 import { updateIssueStatus } from '../../services/api';
 import toast from 'react-hot-toast';
 
-const KanbanBoard = ({ issues, onUpdate, onCreateIssue }) => {
+const KanbanBoard = ({ issues, onUpdate, onCreateIssue, onDelete }) => {
   const [draggedIssueId, setDraggedIssueId] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const columns = [
-    { id: 'todo', title: 'TO DO', color: 'bg-primary-100' },
-    { id: 'in_progress', title: 'IN PROGRESS', color: 'bg-yellow-100' },
-    { id: 'in_review', title: 'IN REVIEW', color: 'bg-purple-100' },
-    { id: 'done', title: 'DONE', color: 'bg-green-100' },
+    { id: 'todo', title: 'TO DO', color: 'bg-gray-100' },
+    { id: 'in_progress', title: 'IN PROGRESS', color: 'bg-blue-50' },
+    { id: 'in_review', title: 'IN REVIEW', color: 'bg-purple-50' },
+    { id: 'done', title: 'DONE', color: 'bg-green-50' },
   ];
 
   const groupedIssues = {
@@ -85,6 +85,7 @@ const KanbanBoard = ({ issues, onUpdate, onCreateIssue }) => {
             issues={groupedIssues[column.id] || []}
             color={column.color}
             onCreateIssue={onCreateIssue}
+            onDelete={onDelete}
           />
         ))}
       </div>

@@ -58,16 +58,16 @@ export const SocketProvider = ({ children }) => {
     // Connection event handlers
     newSocket.on('connect', () => {
       setIsConnected(true);
-      console.log('Socket connected');
+      if (import.meta.env.DEV) console.log('Socket connected');
     });
 
     newSocket.on('disconnect', () => {
       setIsConnected(false);
-      console.log('Socket disconnected');
+      if (import.meta.env.DEV) console.log('Socket disconnected');
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+      if (import.meta.env.DEV) console.error('Socket connection error:', error);
     });
 
     // Real-time event handlers - use debouncing to prevent excessive invalidations

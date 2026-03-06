@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
@@ -121,6 +122,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Global Middleware
 app.use(requestId); // Add Request ID
+app.use(cookieParser());
 
 // Body size limits from environment or defaults
 const maxBodySize = process.env.MAX_BODY_SIZE || '10mb';

@@ -1,8 +1,8 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { register, login, getMe, forgotPassword, resetPassword } from '../controllers/authController.js';
+import { register, login, logout, getMe, forgotPassword, resetPassword } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
-import { validateRegister, validateLogin, validateForgotPassword, validateResetPassword } from '../middleware/validation.js';
+import { validateRegister, validateLogin, validateForgotPassword, validateResetPassword, validateResetPasswordToken } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -95,9 +95,10 @@ router.post('/login', authLimiter, validateLogin, login);
  *         description: Unauthorized
  */
 router.get('/me', protect, getMe);
+router.post('/logout', protect, logout);
 
 router.post('/forgot-password', authLimiter, validateForgotPassword, forgotPassword);
-router.put('/reset-password/:token', validateResetPassword, resetPassword);
+router.put('/reset-password/:token', validateResetPasswordToken, validateResetPassword, resetPassword);
 
 export default router;
 

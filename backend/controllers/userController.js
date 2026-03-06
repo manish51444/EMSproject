@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import Organization from '../models/Organization.js';
+import WorkLog from '../models/WorkLog.js';
 import { sendErrorResponse } from '../utils/errorResponse.js';
 import { generateResetToken } from '../utils/generateResetToken.js';
 import { sendWelcomeEmail } from '../utils/emailService.js';
@@ -237,6 +238,78 @@ export const updateUser = async (req, res) => {
     }
     
     sendErrorResponse(res, 500, 'Failed to update user', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
+  }
+};
+
+// @desc    Get current user's statistics (working time, time per project)
+// @route   GET /api/users/me/stats
+// @access  Private
+export const getMyStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { from, to } = req.query;
+
+    const matchStage = { userId: userId };
+    if (from || to) {
+      matchStage.started = {};
+      if (from) matchStage.started.$gte = new Date(from);
+      if (to) matchStage.started.$lte = new Date(to);
+    }
+
+    const byProject = await WorkLog.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'issues',
+          localField: 'issueId',
+          foreignField: '_id',
+          as: 'issue',
+        },
+      },
+      { $unwind: { path: '$issue', preserveNullAndEmptyArrays: false } },
+      {
+        $group: {
+          _id: '$issue.projectId',
+          timeSpentMinutes: { $sum: '$timeSpent' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'project',
+        },
+      },
+      { $unwind: { path: '$project', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          projectId: '$_id',
+          projectName: { $ifNull: ['$project.name', 'Unknown'] },
+          timeSpentMinutes: 1,
+          timeSpentHours: { $round: [{ $divide: ['$timeSpentMinutes', 60] }, 2] },
+          _id: 0,
+        },
+      },
+      { $sort: { timeSpentMinutes: -1 } },
+    ]);
+
+    const totalResult = await WorkLog.aggregate([
+      { $match: matchStage },
+      { $group: { _id: null, totalTimeSpentMinutes: { $sum: '$timeSpent' } } },
+    ]);
+
+    const totalTimeSpentMinutes = totalResult[0]?.totalTimeSpentMinutes ?? 0;
+    const totalTimeSpentHours = Math.round((totalTimeSpentMinutes / 60) * 100) / 100;
+
+    res.json({
+      totalTimeSpentMinutes,
+      totalTimeSpentHours,
+      workingTimeHours: totalTimeSpentHours,
+      byProject,
+    });
+  } catch (error) {
+    sendErrorResponse(res, 500, 'Failed to fetch user statistics', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }
 };
 

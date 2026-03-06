@@ -10,6 +10,7 @@ import {
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errorUtils';
 import {
   Search,
   FileText,
@@ -59,7 +60,7 @@ const AttachmentsView = ({ onCreateAttachment }) => {
       toast.success('Attachment uploaded successfully');
     },
     onError: (error) => {
-      toast.error('Failed to upload attachment: ' + (error.response?.data?.message || error.message));
+      toast.error('Failed to upload attachment: ' + getErrorMessage(error));
     }
   });
 
@@ -235,7 +236,7 @@ const AttachmentsView = ({ onCreateAttachment }) => {
                   >
                     {isImage ? (
                       <img
-                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${attachment._id}/download?token=${localStorage.getItem('token')}`}
+                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${attachment._id}/download`}
                         alt={attachment.originalName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -352,7 +353,7 @@ const AttachmentsView = ({ onCreateAttachment }) => {
             <div className="w-full h-full flex items-center justify-center overflow-hidden rounded-lg bg-black/20">
               {viewingAttachment.mimeType.startsWith('image/') ? (
                 <img
-                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${viewingAttachment._id}/download?token=${localStorage.getItem('token')}`}
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${viewingAttachment._id}/download`}
                   alt={viewingAttachment.originalName}
                   className="max-w-full max-h-full object-contain"
                 />
@@ -360,13 +361,13 @@ const AttachmentsView = ({ onCreateAttachment }) => {
                 <video
                   controls
                   className="max-w-full max-h-full"
-                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${viewingAttachment._id}/download?token=${localStorage.getItem('token')}`}
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${viewingAttachment._id}/download`}
                 >
                   Your browser does not support the video tag.
                 </video>
               ) : (
                 <iframe
-                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${viewingAttachment._id}/download?token=${localStorage.getItem('token')}`}
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/attachments/${viewingAttachment._id}/download`}
                   className="w-full h-full bg-white"
                   title={viewingAttachment.originalName}
                 />

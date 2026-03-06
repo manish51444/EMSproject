@@ -14,7 +14,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-[#0e2b3d];
   }
 }
 
@@ -24,11 +24,11 @@
   }
   
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply bg-[#1cca9b] text-white hover:bg-primary-600;
   }
   
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+    @apply bg-gray-200 text-[#0e2b3d] hover:bg-gray-300;
   }
   
   .btn-danger {
@@ -36,7 +36,7 @@
   }
   
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1cca9b] focus:border-transparent;
   }
   
   .card {

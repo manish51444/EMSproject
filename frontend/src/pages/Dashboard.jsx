@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Filter, AlertCircle } from 'lucide-react';
+import { Plus, Filter, AlertCircle, Clock } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { getIssues, getProjects, createIssue } from '../services/api';
+import { getIssues, getProjects, createIssue, getMyStats } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import IssueModal from '../components/issues/IssueModal';
 import SkeletonLoader from '../components/common/SkeletonLoader';
@@ -36,6 +36,11 @@ const Dashboard = () => {
     },
   });
 
+  const { data: userStats } = useQuery({
+    queryKey: ['userStats'],
+    queryFn: () => getMyStats().then((res) => res.data),
+  });
+
   // Extract arrays from paginated responses
   const projects = Array.isArray(projectsResponse?.data)
     ? projectsResponse.data
@@ -53,8 +58,8 @@ const Dashboard = () => {
     try {
       await createIssue(data);
       toast.success('Issue created successfully');
+      await refetch();
       setIsModalOpen(false);
-      refetch();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create issue');
     }
@@ -64,7 +69,7 @@ const Dashboard = () => {
     {
       label: 'Total Issues',
       value: issues.length || 0,
-      color: 'bg-primary-500',
+      color: 'bg-[#1cca9b]',
     },
     {
       label: 'In Progress',
@@ -98,20 +103,20 @@ const Dashboard = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          {/* Show department filter info for Managers */}
+          <h1 className="text-2xl font-bold text-[#0e2b3d]">Dashboard</h1>
+          <p className="text-[#666] mt-1">Welcome back, {user?.name || 'User'}. Here&apos;s what&apos;s happening today.</p>
           {user?.role === 'manager' && user?.department && (
-            <div className="mt-2 flex items-center space-x-2 text-sm text-gray-600">
+            <div className="mt-2 flex items-center space-x-2 text-sm text-[#666]">
               <Filter size={16} />
               <span>
-                Showing projects for: <span className="font-semibold text-gray-900">{formatDepartment(user.department)}</span>
+                Showing projects for: <span className="font-semibold text-[#0e2b3d]">{formatDepartment(user.department)}</span>
               </span>
             </div>
           )}
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="btn btn-primary flex items-center space-x-2"
+          className="px-4 py-2 bg-[#1cca9b] text-white rounded-lg hover:bg-[#18b58a] flex items-center space-x-2 font-medium"
           disabled={projects.length === 0}
         >
           <Plus size={20} />
@@ -182,8 +187,8 @@ const Dashboard = () => {
             <div key={index} className="card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm text-[#666] uppercase tracking-wide">{stat.label}</p>
+                  <p className="text-2xl font-bold text-[#0e2b3d] mt-1">
                     {stat.value}
                   </p>
                 </div>
@@ -196,9 +201,48 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* User Statistics */}
+      {userStats && (
+        <div className="card mb-6">
+          <h2 className="text-lg font-semibold text-[#0e2b3d] mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#1cca9b]" />
+            User Statistics
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-[#666]">Total working time (logged)</p>
+              <p className="text-xl font-bold text-[#0e2b3d]">
+                {userStats.totalTimeSpentHours ?? 0} hrs
+              </p>
+              <p className="text-xs text-[#666]">{userStats.totalTimeSpentMinutes ?? 0} minutes</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[#0e2b3d]">Time by project</p>
+              {userStats.byProject?.length > 0 ? (
+                <ul className="space-y-1">
+                  {userStats.byProject.map((p) => (
+                    <li
+                      key={p.projectId}
+                      className="flex justify-between text-sm text-[#666]"
+                    >
+                      <span className="truncate mr-2">{p.projectName}</span>
+                      <span className="font-medium text-[#0e2b3d] whitespace-nowrap">
+                        {p.timeSpentHours ?? 0} hrs
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-[#666]">Log time on issues to see project breakdown.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Recent Issues */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Recent Issues</h2>
+        <h2 className="text-lg font-semibold text-[#0e2b3d] mb-4">Assigned to Me</h2>
         <div className="space-y-2">
           {issuesLoading ? (
             <div className="space-y-4">
@@ -227,13 +271,13 @@ const Dashboard = () => {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-1">
                     <div className="flex items-center space-x-3">
-                      <span className="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
+                      <span className="text-sm font-medium text-[#0e2b3d] group-hover:text-[#1cca9b] transition-colors">
                         {issue.key}
                       </span>
-                      <span className="text-sm text-gray-700">{issue.title}</span>
+                      <span className="text-sm text-[#666]">{issue.title}</span>
                     </div>
                     {projectName && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[#666]">
                         Project: {projectName}
                       </span>
                     )}
@@ -242,8 +286,8 @@ const Dashboard = () => {
                     className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${issue.status === 'done'
                         ? 'bg-green-100 text-green-800'
                         : issue.status === 'in_progress'
-                          ? 'bg-primary-100 text-primary-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-[#e6faf5] text-[#08614a]'
+                          : 'bg-gray-100 text-[#666]'
                       }`}
                   >
                     {issue.status.replace('_', ' ')}
@@ -262,7 +306,7 @@ const Dashboard = () => {
               {projects.length > 0 && (
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  className="mt-3 text-sm text-[#1cca9b] hover:text-[#18b58a] font-medium"
                 >
                   Create your first issue
                 </button>

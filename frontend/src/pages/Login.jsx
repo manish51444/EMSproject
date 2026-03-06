@@ -36,13 +36,11 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-10 h-10 bg-primary-600 rounded flex items-center justify-center mr-2">
-              <span className="text-white font-bold text-xl">P</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Paarsiv</h1>
+            <img src="/Logo.png" alt="Paarsiv" className="w-10 h-10 object-contain mr-2" />
+            <h1 className="text-2xl font-bold text-[#0e2b3d]">Paarsiv</h1>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Sign in to Paarsiv</h2>
-          <p className="text-sm text-gray-600">Welcome back! Please enter your details.</p>
+          <h2 className="text-2xl font-bold text-[#0e2b3d]">Sign in to Paarsiv</h2>
+          <p className="text-sm text-[#666]">Welcome back! Please enter your details.</p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -71,7 +69,7 @@ const Login = () => {
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-primary-600 hover:text-primary-500"
+                  className="text-sm text-[#1cca9b] hover:text-[#18b58a]"
                 >
                   Forgot password?
                 </Link>
@@ -101,7 +99,7 @@ const Login = () => {
             </div>
           </div>
           <div>
-            <button type="submit" className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition-colors">
+            <button type="submit" className="w-full bg-[#1cca9b] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#18b58a] transition-colors">
               Sign in
             </button>
           </div>

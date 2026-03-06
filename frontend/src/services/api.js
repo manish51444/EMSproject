@@ -4,23 +4,17 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // Send httpOnly auth cookie
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add token to requests
+// Auth is cookie-based (withCredentials: true). No need to add Authorization header;
+// the backend accepts either cookie or Bearer token; cookie is sent automatically for same-origin.
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (config) => config,
+  (error) => Promise.reject(error)
 );
 
 // Queue request for offline sync
@@ -29,11 +23,11 @@ const queueRequest = (config) => {
     // Queue for background sync when online
     return new Promise((resolve, reject) => {
       try {
+        // Do not store auth headers; replay will use current cookie via withCredentials
         const requestData = {
           url: config.url,
           method: config.method,
           data: config.data,
-          headers: config.headers,
           timestamp: Date.now()
         };
         
@@ -68,14 +62,37 @@ const queueRequest = (config) => {
   return Promise.reject(new Error('Offline and background sync not available'));
 };
 
+// Replay queued requests when coming back online
+const replayQueuedRequests = () => {
+  try {
+    const queued = JSON.parse(localStorage.getItem('offline-requests') || '[]');
+    if (queued.length === 0) return;
+    localStorage.setItem('offline-requests', '[]');
+    queued.forEach(({ url, method, data }) => {
+      const m = (method || 'get').toLowerCase();
+      api.request({ url, method: m, data }).catch(() => {
+        // Re-queue on failure so we can retry later
+        const again = JSON.parse(localStorage.getItem('offline-requests') || '[]');
+        again.push({ url, method, data, timestamp: Date.now() });
+        localStorage.setItem('offline-requests', JSON.stringify(again));
+      });
+    });
+  } catch (e) {
+    console.warn('Offline queue replay failed', e);
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', replayQueuedRequests);
+}
+
 // Handle token expiration and offline requests
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.dispatchEvent(new CustomEvent('auth:logout'));
     }
     
     // Handle offline requests
@@ -91,6 +108,7 @@ api.interceptors.response.use(
 // Auth
 export const register = (userData) => api.post('/auth/register', userData);
 export const login = (credentials) => api.post('/auth/login', credentials);
+export const logout = () => api.post('/auth/logout');
 export const getMe = () => api.get('/auth/me');
 export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
 export const resetPassword = (token, password) => api.put(`/auth/reset-password/${token}`, { password });
@@ -255,6 +273,7 @@ export const createOrganization = (data) => api.post('/organizations', data);
 // Users
 export const getUsers = (params) => api.get('/users', { params });
 export const getUser = (id) => api.get(`/users/${id}`);
+export const getMyStats = (params) => api.get('/users/me/stats', { params });
 export const createUser = (data) => api.post('/users', data);
 export const updateUser = (id, data) => api.put(`/users/${id}`, data);
 

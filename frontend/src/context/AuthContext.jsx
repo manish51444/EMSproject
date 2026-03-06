@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getMe, login as loginApi, register as registerApi } from '../services/api';
+import { getMe, login as loginApi, register as registerApi, logout as logoutApi } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -20,24 +20,16 @@ export const AuthProvider = ({ children }) => {
     let isMounted = true;
 
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-
-      if (token && savedUser) {
-        try {
-          const response = await getMe();
-          if (isMounted) {
-            setUser(response.data);
-            localStorage.setItem('user', JSON.stringify(response.data));
-          }
-        } catch (error) {
-          if (isMounted) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          }
+      try {
+        const response = await getMe();
+        if (isMounted) {
+          setUser(response.data);
+        }
+      } catch {
+        if (isMounted) {
+          setUser(null);
         }
       }
-      
       if (isMounted) {
         setLoading(false);
       }
@@ -45,18 +37,21 @@ export const AuthProvider = ({ children }) => {
 
     initAuth();
 
-    // Cleanup function to prevent memory leaks
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setUser(null);
+    window.addEventListener('auth:logout', handler);
+    return () => window.removeEventListener('auth:logout', handler);
   }, []);
 
   const login = async (email, password) => {
     try {
       const response = await loginApi({ email, password });
       const { token, ...userData } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       toast.success('Logged in successfully');
       return { success: true };
@@ -69,20 +64,19 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await registerApi(userData);
-      // Don't auto-login - user needs to set password first
-      // Return full response including resetToken for redirect
-      return { 
-        success: true, 
-        data: response.data 
-      };
+      return { success: true, data: response.data };
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed');
       return { success: false, error: error.response?.data?.message };
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // Ignore errors (e.g. already logged out)
+    }
     localStorage.removeItem('user');
     setUser(null);
     toast.success('Logged out successfully');

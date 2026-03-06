@@ -4,9 +4,10 @@ import User from '../models/User.js';
 export const protect = async (req, res, next) => {
   let token;
 
-  // Only accept token from Authorization header for security
-  // Query string tokens are insecure (can leak in logs, referrers, etc.)
-  if (
+  // Prefer httpOnly cookie (XSS-safe); fall back to Authorization header (API clients)
+  if (req.cookies?.token) {
+    token = req.cookies.token;
+  } else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {

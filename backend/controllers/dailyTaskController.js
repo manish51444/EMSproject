@@ -36,7 +36,7 @@ export const getDailyTasks = async (req, res) => {
   }
 };
 
-// @desc    Create or update my daily task for a date (upsert)
+// @desc    Create my daily task for a date (one per user per project per day; duplicate returns "Already created or exist")
 // @route   POST /api/projects/:projectId/daily-tasks
 // @access  Private
 export const createDailyTask = async (req, res) => {
@@ -46,15 +46,29 @@ export const createDailyTask = async (req, res) => {
 
     const taskDate = startOfDay(date || new Date());
 
-    const task = await DailyTask.findOneAndUpdate(
-      { projectId, userId: req.user._id, date: taskDate },
-      { $set: { title: title || '', content: content || '' } },
-      { new: true, upsert: true, runValidators: true }
-    )
+    const existing = await DailyTask.findOne({
+      projectId,
+      userId: req.user._id,
+      date: taskDate,
+    });
+
+    if (existing) {
+      return sendErrorResponse(res, 400, 'Already created or exist', req.id);
+    }
+
+    const task = await DailyTask.create({
+      projectId,
+      userId: req.user._id,
+      date: taskDate,
+      title: title || '',
+      content: content || '',
+    });
+
+    const populated = await DailyTask.findById(task._id)
       .populate('userId', 'name email avatar')
       .lean();
 
-    res.status(201).json(task);
+    res.status(201).json(populated);
   } catch (error) {
     sendErrorResponse(res, 500, 'Failed to save daily task', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Upload, File, XCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getUsers, getProject, uploadAttachment } from '../../services/api';
@@ -23,6 +23,20 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
   const [proofFiles, setProofFiles] = useState([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loadUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await getUsers();
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +75,16 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
       }
       loadUsers();
     }
-  }, [isOpen, issue, projects, initialStatus, initialSprintId]);
+  }, [isOpen, issue, projects, initialStatus, initialSprintId, loadUsers]);
+
+  const loadProjectDetails = useCallback(async (projectId) => {
+    try {
+      const response = await getProject(projectId);
+      setSelectedProject(response.data);
+    } catch (error) {
+      console.error('Failed to load project details:', error);
+    }
+  }, []);
 
   useEffect(() => {
     if (formData.projectId) {
@@ -70,35 +93,9 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
       setSelectedProject(null);
       setFilteredUsers(users);
     }
-  }, [formData.projectId, users]);
+  }, [formData.projectId, users, loadProjectDetails]);
 
-  useEffect(() => {
-    filterUsersByProject();
-  }, [selectedProject, users, user]);
-
-  const loadUsers = async () => {
-    setLoadingUsers(true);
-    try {
-      const response = await getUsers();
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Failed to load users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
-  const loadProjectDetails = async (projectId) => {
-    try {
-      const response = await getProject(projectId);
-      setSelectedProject(response.data);
-    } catch (error) {
-      console.error('Failed to load project details:', error);
-    }
-  };
-
-  const filterUsersByProject = () => {
+  const filterUsersByProject = useCallback(() => {
     let filtered = users;
 
     // Managers and admins can assign to anyone in the org (cross-department)
@@ -124,7 +121,11 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
     }
 
     setFilteredUsers(filtered);
-  };
+  }, [users, user, selectedProject]);
+
+  useEffect(() => {
+    filterUsersByProject();
+  }, [filterUsersByProject]);
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
@@ -177,7 +178,8 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    if (isSubmitting) return;
+
     // If marking as done, require proof attachments
     if (formData.status === 'done' && (!formData.proofAttachments || formData.proofAttachments.length === 0)) {
       toast.error('Please attach proof of work (images or reports) when marking as Done');
@@ -191,7 +193,15 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
         : [],
       dueDate: formData.dueDate || undefined,
     };
-    onSubmit(submitData);
+    setIsSubmitting(true);
+    try {
+      const result = onSubmit(submitData);
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -539,11 +549,11 @@ const IssueModal = ({ isOpen, onClose, issue, onSubmit, projects, initialStatus,
             </div>
           </div>
           <div className="flex justify-end space-x-3 pt-4">
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+            <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              {issue ? 'Update' : 'Create'}
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? (issue ? 'Updating…' : 'Creating…') : (issue ? 'Update' : 'Create')}
             </button>
           </div>
         </form>

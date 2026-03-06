@@ -2,14 +2,18 @@
  * Pagination utility functions
  */
 
+const MAX_LIMIT = 100;
+
 /**
- * Get pagination parameters from request query
+ * Get pagination parameters from request query.
+ * Limit is capped at MAX_LIMIT so routes that don't use validatePagination are still safe.
  * @param {Object} req - Express request object
  * @returns {Object} Pagination parameters
  */
 export const getPaginationParams = (req) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const rawLimit = parseInt(req.query.limit, 10) || 10;
+  const limit = Math.min(MAX_LIMIT, Math.max(1, rawLimit));
   const skip = (page - 1) * limit;
 
   return { page, limit, skip };

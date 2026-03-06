@@ -255,8 +255,7 @@ export const uploadProjectAttachment = async (req, res) => {
 // @access  Private
 export const downloadAttachment = async (req, res) => {
   try {
-    const attachment = await Attachment.findById(req.params.id);
-
+    const attachment = req.attachment || await Attachment.findById(req.params.id);
     if (!attachment) {
       return res.status(404).json({ message: 'Attachment not found' });
     }
@@ -295,14 +294,19 @@ export const downloadAttachment = async (req, res) => {
 // @access  Private
 export const getAttachment = async (req, res) => {
   try {
-    const attachment = await Attachment.findById(req.params.id)
-      .populate('issueId', 'key title')
-      .populate('uploadedBy', 'name email avatar');
-
+    let attachment = req.attachment;
+    if (!attachment) {
+      attachment = await Attachment.findById(req.params.id)
+        .populate('issueId', 'key title')
+        .populate('uploadedBy', 'name email avatar');
+    } else {
+      attachment = await Attachment.findById(attachment._id)
+        .populate('issueId', 'key title')
+        .populate('uploadedBy', 'name email avatar');
+    }
     if (!attachment) {
       return res.status(404).json({ message: 'Attachment not found' });
     }
-
     res.json(attachment);
   } catch (error) {
     sendErrorResponse(res, 500, 'Failed to fetch attachment', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
@@ -314,8 +318,7 @@ export const getAttachment = async (req, res) => {
 // @access  Private
 export const deleteAttachment = async (req, res) => {
   try {
-    const attachment = await Attachment.findById(req.params.id);
-
+    const attachment = req.attachment || await Attachment.findById(req.params.id);
     if (!attachment) {
       return res.status(404).json({ message: 'Attachment not found' });
     }

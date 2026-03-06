@@ -11,15 +11,6 @@ import { sendIssueNotification, sendAssignmentNotification, sendIssueCreatedNoti
 import { getAssigneeIds, getAssigneesList, normalizeAssignees, isUserAssigned } from '../utils/assigneeHelper.js';
 import { sendErrorResponse } from '../utils/errorResponse.js';
 
-// Helper function to get user's organization projects
-const getUserOrganizationProjects = async (userId) => {
-  const user = await User.findById(userId);
-  if (!user || !user.organization) {
-    return [];
-  }
-  return await Project.find({ organization: user.organization }).select('_id');
-};
-
 const { ROLES, ISSUE } = CONSTANTS;
 
 /**
@@ -59,17 +50,15 @@ const canModifyIssue = async (issue, userId, userRole) => {
     return false;
   }
 
-  // Check if user is project lead or member
+  // Check if user is project lead
   const isLead = project.lead.toString() === userId.toString();
-  const isMember = project.members.some(
-    (memberId) => memberId.toString() === userId.toString()
-  );
 
   // Check if user is assignee or reporter
   const isAssignee = isUserAssigned(issue, userId);
   const isReporter = issue.reporter.toString() === userId.toString();
 
-  return isLead || isMember || isAssignee || isReporter;
+  // Only lead, assignee(s), or reporter can modify (plus earlier admin/manager checks)
+  return isLead || isAssignee || isReporter;
 };
 
 // @desc    Get all issues
@@ -340,16 +329,15 @@ export const createIssue = async (req, res) => {
       .populate('assignees', 'name email avatar')
       .populate('reporter', 'name email avatar');
 
-    // Send notifications
+    // Send notifications: one "created" email to reporter only; assignees get "created and assigned to you" only
+    const reporterEmail = populatedIssue.reporter?.email;
     await Promise.all([
       sendTeamsNotification(populatedIssue, 'created'),
-      sendIssueNotification(populatedIssue, 'created')
+      reporterEmail ? sendIssueNotification(populatedIssue, 'created', reporterEmail) : Promise.resolve(),
     ]);
 
-    // Send email to all assignees if issue was assigned during creation
+    // Send email to assignees only (assignee-specific "new issue assigned to you") — avoid duplicate with generic "created"
     const assigneesToNotify = getAssigneesList(populatedIssue);
-    
-    // Batch send notifications (assignees are already populated)
     assigneesToNotify.forEach((assignee) => {
       if (assignee?.email) {
         sendIssueCreatedNotification(populatedIssue, assignee).catch((error) => {
@@ -506,25 +494,25 @@ export const updateIssue = async (req, res) => {
       });
     }
 
-    // Send update notifications to all assignees
+    // Send update notifications to assignees who were already assigned (newly assigned already got sendAssignmentNotification)
     const assigneesToNotifyForUpdate = getAssigneesList(updatedIssue);
-    
-    // Batch get assignee emails to avoid N+1 queries
     const assigneeIdsForUpdate = assigneesToNotifyForUpdate.map(a => a?._id || a).filter(Boolean);
     const assigneeEmails = assigneeIdsForUpdate.length > 0
       ? await User.find({ _id: { $in: assigneeIdsForUpdate } }).select('email').lean()
       : [];
-    const emailList = assigneeEmails.map(u => u.email).filter(Boolean);
-    
-    // Send notifications
+    const alreadyAssignedIds = oldAssignees || [];
+    const emailList = assigneeEmails
+      .filter((u) => alreadyAssignedIds.includes(u._id.toString()))
+      .map((u) => u.email)
+      .filter(Boolean);
+
     await Promise.all([
       sendTeamsNotification(updatedIssue, 'updated'),
-      // Send email notification to each assignee
-      ...emailList.map(email => {
-        return sendIssueNotification(updatedIssue, 'updated', email).catch((error) => {
+      ...emailList.map((email) =>
+        sendIssueNotification(updatedIssue, 'updated', email).catch((error) => {
           console.error('Failed to send update notification:', error);
-        });
-      })
+        })
+      ),
     ]);
 
     // Emit Socket.io event for real-time updates
@@ -735,6 +723,8 @@ export const rejectIssue = async (req, res) => {
       return sendErrorResponse(res, 400, 'Rejection comment is required', req.id);
     }
 
+    const previousApprovalStatus = issue.approvalStatus === 'approved' ? 'approved' : 'pending';
+
     issue.approvalStatus = 'rejected';
     issue.rejectedBy = req.user._id;
     issue.rejectedAt = new Date();
@@ -752,7 +742,7 @@ export const rejectIssue = async (req, res) => {
       userId: req.user._id,
       action: 'rejected',
       field: 'approvalStatus',
-      oldValue: issue.approvalStatus === 'approved' ? 'approved' : 'pending',
+      oldValue: previousApprovalStatus,
       newValue: 'rejected',
     });
 

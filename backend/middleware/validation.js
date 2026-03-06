@@ -53,8 +53,13 @@ export const validateRegister = [
     .withMessage('Invalid role'),
   body('department')
     .optional()
-    .isIn(['salesforce', 'web_development', 'mobile_development', null])
-    .withMessage('Invalid department'),
+    .custom((value) => {
+      if (value === null || value === undefined) return true;
+      const arr = Array.isArray(value) ? value : [value];
+      const valid = ['salesforce', 'web_development', 'mobile_development'];
+      return arr.every((d) => valid.includes(d));
+    })
+    .withMessage('Invalid department; must be one or more of: salesforce, web_development, mobile_development'),
   handleValidationErrors,
 ];
 
@@ -206,6 +211,14 @@ export const validateUpdateIssue = [
     .optional()
     .isMongoId()
     .withMessage('Invalid assignee ID'),
+  body('assignees')
+    .optional()
+    .isArray()
+    .withMessage('Assignees must be an array'),
+  body('assignees.*')
+    .optional()
+    .isMongoId()
+    .withMessage('Invalid assignee ID in array'),
   body('labels')
     .optional()
     .isArray()
@@ -308,6 +321,17 @@ export const validateForgotPassword = [
     .isEmail()
     .withMessage('Please provide a valid email')
     .normalizeEmail(),
+  handleValidationErrors,
+];
+
+// Validates :token param on reset-password route (use with validateResetPassword for body)
+export const validateResetPasswordToken = [
+  param('token')
+    .notEmpty()
+    .withMessage('Reset token is required')
+    .trim()
+    .isLength({ min: 10 })
+    .withMessage('Invalid reset token format'),
   handleValidationErrors,
 ];
 

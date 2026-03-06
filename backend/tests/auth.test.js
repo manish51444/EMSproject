@@ -7,7 +7,8 @@ describe('Auth API', () => {
         name: 'Test User',
         email: 'test@example.com',
         password: 'Password123!',
-        role: 'developer'
+        role: 'developer',
+        organizationName: 'Test Org',
     };
 
     it('should register a new user', async () => {
@@ -16,8 +17,8 @@ describe('Auth API', () => {
             .send(userData);
 
         expect(res.statusCode).toEqual(201);
-        expect(res.body).toHaveProperty('token');
         expect(res.body.name).toEqual(userData.name);
+        expect(res.body.organization).toBeDefined();
     });
 
     it('should login the user', async () => {
@@ -30,6 +31,7 @@ describe('Auth API', () => {
 
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('token');
+        expect(res.body.organization).toBeDefined();
     });
 
     it('should fail login with wrong password', async () => {
@@ -41,5 +43,13 @@ describe('Auth API', () => {
             });
 
         expect(res.statusCode).toEqual(401);
+    });
+
+    it('should reject reset-password when token param is too short', async () => {
+        const res = await request(app)
+            .put('/api/auth/reset-password/short')
+            .send({ password: 'NewPassword123!' });
+        expect(res.statusCode).toEqual(400);
+        expect(res.body.message).toBeDefined();
     });
 });

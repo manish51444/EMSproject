@@ -1,6 +1,7 @@
 /**
  * Enhanced error handler middleware
- * Sanitizes error messages to prevent information leakage
+ * Sanitizes error messages to prevent information leakage.
+ * Note: We use res.statusCode when it's still 200 (route didn't set status); otherwise we keep the status the route set (e.g. 404 from notFound).
  */
 export const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;

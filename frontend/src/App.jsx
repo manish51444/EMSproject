@@ -1,7 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -27,6 +27,7 @@ import FormBuilder from './pages/FormBuilder';
 import FormView from './pages/FormView';
 import ReportBuilder from './pages/ReportBuilder';
 import ReportView from './pages/ReportView';
+import Analytics from './pages/Analytics';
 import UserManagement from './pages/UserManagement';
 import Teams from './pages/Teams';
 
@@ -57,6 +58,24 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" />;
 };
 
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" />;
+  if (user.role !== 'admin' && user.role !== 'manager') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+};
+
 const RootRedirect = () => {
   const { user, loading } = useAuth();
 
@@ -70,6 +89,16 @@ const RootRedirect = () => {
 
   // If user is logged in, redirect to dashboard, otherwise to login
   return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+};
+
+const AuthLogoutListener = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handler = () => navigate('/login');
+    window.addEventListener('auth:logout', handler);
+    return () => window.removeEventListener('auth:logout', handler);
+  }, [navigate]);
+  return null;
 };
 
 const Layout = ({ children }) => {
@@ -101,6 +130,7 @@ function App() {
             <Toaster position="top-right" />
             <OfflineIndicator />
             <PWAInstallPrompt />
+            <AuthLogoutListener />
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -108,7 +138,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/" element={<RootRedirect />} />
-              <Route path="/account-details" element={<AccountDetails />} />
+              <Route path="/account-details" element={<ProtectedRoute><Layout><AccountDetails /></Layout></ProtectedRoute>} />
               <Route
                 path="/settings"
                 element={
@@ -127,6 +157,16 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Analytics />
                     </Layout>
                   </ProtectedRoute>
                 }
@@ -218,11 +258,11 @@ function App() {
               <Route
                 path="/admin/users"
                 element={
-                  <ProtectedRoute>
+                  <AdminRoute>
                     <Layout>
                       <UserManagement />
                     </Layout>
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
               <Route

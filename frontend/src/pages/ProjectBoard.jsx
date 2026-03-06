@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProject, getIssues, getProjects, createIssue } from '../services/api';
+import { getProject, getIssues, getProjects, createIssue, deleteIssue } from '../services/api';
 import KanbanBoard from '../components/boards/KanbanBoard';
 import SummaryView from '../components/summary/SummaryView';
 import ListView from '../components/list/ListView';
@@ -44,6 +44,7 @@ const ProjectBoard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { joinProject, leaveProject } = useSocket();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeView, setActiveView] = useState('board');
@@ -121,10 +122,22 @@ const ProjectBoard = () => {
     try {
       await createIssue({ ...data, projectId: id });
       toast.success('Issue created successfully');
+      queryClient.invalidateQueries({ queryKey: ['issues', id] });
+      await refetch();
       setIsModalOpen(false);
-      refetch();
     } catch (error) {
       toast.error('Failed to create issue');
+    }
+  };
+
+  const handleDeleteIssue = async (issue) => {
+    try {
+      await deleteIssue(issue._id);
+      toast.success('Issue deleted');
+      queryClient.invalidateQueries({ queryKey: ['issues', id] });
+      await refetch();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete issue');
     }
   };
 
@@ -156,23 +169,26 @@ const ProjectBoard = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
+              <div className="w-9 h-9 bg-[#1cca9b] rounded flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
                   {project.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h1 className="text-lg font-semibold text-gray-900">{project.name}</h1>
-                  <Lock className="w-4 h-4 text-gray-400" />
-                  <button className="text-sm text-gray-600 hover:text-gray-900">
+                  <h1 className="text-lg font-semibold text-[#0e2b3d]">{project.name}</h1>
+                  <Lock className="w-4 h-4 text-[#666]" />
+                  <button className="text-sm text-[#666] hover:text-[#0e2b3d]">
                     Project settings
                   </button>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-2 bg-[#1cca9b] text-white rounded-lg hover:bg-[#18b58a] flex items-center space-x-2"
+              >
                 <Plus size={16} />
                 <span>Create</span>
               </button>
@@ -188,16 +204,16 @@ const ProjectBoard = () => {
                   key={view.id}
                   onClick={() => setActiveView(view.id)}
                   className={`px-4 py-2 flex items-center space-x-2 border-b-2 transition-colors ${activeView === view.id
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    ? 'border-[#1cca9b] text-[#0e2b3d] font-medium'
+                    : 'border-transparent text-[#666] hover:text-[#0e2b3d]'
                     }`}
                 >
                   <Icon size={16} />
-                  <span className="text-sm font-medium">{view.label}</span>
+                  <span className="text-sm">{view.label}</span>
                 </button>
               );
             })}
-            <button className="px-2 py-2 text-gray-400 hover:text-gray-600">
+            <button className="px-2 py-2 text-[#666] hover:text-[#0e2b3d]">
               <Plus size={16} />
             </button>
           </div>
@@ -210,13 +226,13 @@ const ProjectBoard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
                 <input
                   type="text"
-                  placeholder="Search board"
+                  placeholder="Filter issues..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${searchQuery && issues.length > 0 ? 'pl-10 pr-20' : 'pl-10 pr-10'
+                  className={`w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1cca9b] text-[#0e2b3d] placeholder-[#666] ${searchQuery && issues.length > 0 ? 'pl-10 pr-20' : 'pl-10 pr-10'
                     }`}
                 />
                 {searchQuery && issues.length > 0 && (
@@ -235,24 +251,24 @@ const ProjectBoard = () => {
                 )}
               </div>
               {user && (
-                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs">
+                <div className="w-8 h-8 rounded-full bg-[#1cca9b] flex items-center justify-center text-white text-xs">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <button className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+              <button className="px-3 py-2 text-sm text-[#0e2b3d] hover:bg-gray-100 rounded-lg">
                 Share
               </button>
-              <button className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center space-x-1">
+              <button className="px-3 py-2 text-sm text-[#0e2b3d] hover:bg-gray-100 rounded-lg flex items-center space-x-1">
                 <Filter size={16} />
                 <span>Filter</span>
               </button>
-              <button className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+              <button className="px-3 py-2 text-sm text-[#0e2b3d] hover:bg-gray-100 rounded-lg">
                 Group by: Status
               </button>
               <div className="relative">
                 <button
                   onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  className="px-3 py-2 text-[#0e2b3d] hover:bg-gray-100 rounded-lg"
                 >
                   <MoreVertical size={16} />
                 </button>
@@ -312,6 +328,7 @@ const ProjectBoard = () => {
                     setDefaultStatus(status);
                     setIsModalOpen(true);
                   }}
+                  onDelete={handleDeleteIssue}
                   searchQuery={searchQuery}
                 />
               )}
