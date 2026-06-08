@@ -41,7 +41,7 @@ const WorkType = () => {
             <div className="w-8 h-8 bg-primary-600 rounded flex items-center justify-center mr-2">
               <span className="text-white font-bold text-sm">P</span>
             </div>
-            <span className="text-sm font-medium text-gray-700">Paarsiv</span>
+            <span className="text-sm font-medium text-gray-700">EMS</span>
           </div>
         </div>
 

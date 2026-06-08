@@ -58,7 +58,7 @@ const sendEmail = async (recipientEmail, subject, htmlBody, textBody) => {
     // Fallback to SMTP
     const transporter = createTransporter();
     const mailOptions = {
-      from: `"Paarsiv Team" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      from: `"EMS Team" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to: Array.isArray(recipientEmail) ? recipientEmail.join(', ') : recipientEmail,
       subject,
       html: htmlBody,
@@ -93,7 +93,7 @@ export const sendIssueNotification = async (issue, action, recipientEmail) => {
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #0052CC; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0;">Paarsiv</h1>
+          <h1 style="color: white; margin: 0;">EMS</h1>
         </div>
         <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
           <h2 style="color: #333; margin-top: 0;">Issue ${actionText}</h2>
@@ -110,7 +110,7 @@ export const sendIssueNotification = async (issue, action, recipientEmail) => {
           </div>
         </div>
         <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Paarsiv. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} EMS. All rights reserved.</p>
         </div>
       </body>
       </html>
@@ -198,7 +198,7 @@ export const sendCommentNotification = async (issue, comment, commenter) => {
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #0052CC; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0;">Paarsiv</h1>
+          <h1 style="color: white; margin: 0;">EMS</h1>
         </div>
         <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
           <h2 style="color: #333; margin-top: 0;">New Comment Added</h2>
@@ -225,7 +225,7 @@ export const sendCommentNotification = async (issue, comment, commenter) => {
           </div>
         </div>
         <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Paarsiv. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} EMS. All rights reserved.</p>
         </div>
       </body>
       </html>
@@ -282,7 +282,7 @@ export const sendAssignmentNotification = async (issue, assignee, assignedBy) =>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #0052CC; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0;">Paarsiv</h1>
+          <h1 style="color: white; margin: 0;">EMS</h1>
         </div>
         <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
           <h2 style="color: #333; margin-top: 0;">New Assignment</h2>
@@ -309,7 +309,7 @@ export const sendAssignmentNotification = async (issue, assignee, assignedBy) =>
           </div>
         </div>
         <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Paarsiv. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} EMS. All rights reserved.</p>
         </div>
       </body>
       </html>
@@ -362,7 +362,7 @@ export const sendIssueCreatedNotification = async (issue, assignee) => {
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #0052CC; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0;">Paarsiv</h1>
+          <h1 style="color: white; margin: 0;">EMS</h1>
         </div>
         <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
           <h2 style="color: #333; margin-top: 0;">New Issue Created</h2>
@@ -389,7 +389,7 @@ export const sendIssueCreatedNotification = async (issue, assignee) => {
           </div>
         </div>
         <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Paarsiv. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} EMS. All rights reserved.</p>
         </div>
       </body>
       </html>
@@ -456,7 +456,7 @@ export const sendWelcomeEmail = async (user, resetToken) => {
                 <!-- Header -->
                 <tr>
                   <td style="background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Welcome to Paarsiv!</h1>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Welcome to EMS!</h1>
                   </td>
                 </tr>
                 
@@ -464,7 +464,7 @@ export const sendWelcomeEmail = async (user, resetToken) => {
                 <tr>
                   <td style="padding: 40px 30px;">
                     <h2 style="margin: 0 0 16px 0; color: #1a1a1a; font-size: 24px; font-weight: 600;">Welcome, ${user.name}!</h2>
-                    <p style="margin: 0 0 30px 0; color: #555; font-size: 16px; line-height: 1.6;">Thank you for registering with Paarsiv. We're excited to have you on board!</p>
+                    <p style="margin: 0 0 30px 0; color: #555; font-size: 16px; line-height: 1.6;">Thank you for registering with EMS. We're excited to have you on board!</p>
                     
                     <!-- Account Details Box -->
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid #0052CC; border-radius: 4px; margin-bottom: 30px;">
@@ -538,7 +538,7 @@ export const sendWelcomeEmail = async (user, resetToken) => {
                 <!-- Footer -->
                 <tr>
                   <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e0e0e0;">
-                    <p style="margin: 0 0 8px 0; color: #888; font-size: 12px;">© ${new Date().getFullYear()} Paarsiv. All rights reserved.</p>
+                    <p style="margin: 0 0 8px 0; color: #888; font-size: 12px;">© ${new Date().getFullYear()} EMS. All rights reserved.</p>
                     <p style="margin: 0;">
                       <a href="${process.env.FRONTEND_URL}" style="color: #0052CC; text-decoration: none; font-size: 12px;">Visit us at ${process.env.FRONTEND_URL?.replace(/^https?:\/\//, '')}</a>
                     </p>
@@ -553,11 +553,11 @@ export const sendWelcomeEmail = async (user, resetToken) => {
     `;
 
     const textBody = `
-Welcome to Paarsiv!
+Welcome to EMS!
 
 Welcome, ${user.name}!
 
-Thank you for registering with Paarsiv. We're excited to have you on board!
+Thank you for registering with EMS. We're excited to have you on board!
 
 Your Account Details:
 Email: ${user.email}
@@ -571,10 +571,10 @@ Security Note: This link will expire in 24 hours. If you didn't create an accoun
 
 Visit us at: ${process.env.FRONTEND_URL}
 
-© ${new Date().getFullYear()} Paarsiv. All rights reserved.
+© ${new Date().getFullYear()} EMS. All rights reserved.
     `;
 
-    const result = await sendEmail(user.email, 'Welcome to Paarsiv - Set Your Password', htmlBody, textBody);
+    const result = await sendEmail(user.email, 'Welcome to EMS - Set Your Password', htmlBody, textBody);
     
     console.log(`Welcome email sent to ${user.email} via ${result.method}: ${result.messageId || 'success'}`);
     return result;
@@ -600,7 +600,7 @@ export const sendPasswordResetEmail = async (user, resetToken) => {
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #0052CC; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0;">Paarsiv</h1>
+          <h1 style="color: white; margin: 0;">EMS</h1>
         </div>
         <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
           <h2 style="color: #333; margin-top: 0;">Password Reset Request</h2>
@@ -624,7 +624,7 @@ export const sendPasswordResetEmail = async (user, resetToken) => {
           </p>
         </div>
         <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Paarsiv. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} EMS. All rights reserved.</p>
           <p>Visit us at: <a href="${process.env.FRONTEND_URL}" style="color: #0052CC;">${process.env.FRONTEND_URL}</a></p>
         </div>
       </body>
@@ -644,7 +644,7 @@ export const sendPasswordResetEmail = async (user, resetToken) => {
       
       Visit us at: ${process.env.FRONTEND_URL}
       
-      © ${new Date().getFullYear()} Paarsiv. All rights reserved.
+      © ${new Date().getFullYear()} EMS. All rights reserved.
     `;
 
     const result = await sendEmail(user.email, 'Password Reset Request', htmlBody, textBody);

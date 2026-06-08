@@ -85,9 +85,9 @@ const SignUp = () => {
             <div className="w-10 h-10 bg-primary-600 rounded flex items-center justify-center mr-2">
               <span className="text-white font-bold text-xl">P</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Paarsiv</h1>
+            <h1 className="text-2xl font-bold text-gray-900">EMS</h1>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Get started with Paarsiv</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Get started with EMS</h2>
         
         </div>
 
@@ -137,7 +137,7 @@ const SignUp = () => {
           </button>
 
           <p className="text-center text-sm text-gray-600">
-            Already have Paarsiv?{' '}
+            Already have EMS?{' '}
             <Link to="/login" className="text-primary-600 hover:underline font-medium">
               Login
             </Link>

@@ -34,7 +34,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#0e2b3d] border-b border-[#0e2b3d]/80 sticky top-0 z-40">
+    <nav className="bg-[#0e2b3d] border-b border-[#0e2b3d]/80 sticky top-0 z-40 ">
       <div className="px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -42,13 +42,13 @@ const Navbar = () => {
               <Link to="/dashboard" className="flex items-center space-x-2">
                 <img 
                   src="/Logo.png" 
-                  alt="Paarsiv Logo" 
+                  alt="EMS Logo" 
                   className="w-8 h-8 object-contain"
                 />
-                <span className="text-lg font-semibold text-white">Paarsiv</span>
+                <span className="text-lg font-semibold text-white">EMS</span>
               </Link>
             </div>
-            <div className="hidden lg:flex items-center space-x-1">
+            <div className="hidden md:block lg:flex items-center space-x-1">
               <Link
                 to="/dashboard"
                 className="px-3 py-2 text-sm text-white/90 hover:bg-white/10 rounded-lg transition-colors"
@@ -82,7 +82,7 @@ const Navbar = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <div className="hidden md:block relative">
+            {/* <div className="hidden md:block relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
               <input
                 type="text"
@@ -95,7 +95,7 @@ const Navbar = () => {
               className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg bg-[#1cca9b] text-white text-sm font-medium hover:bg-[#18b58a] transition-colors"
             >
               Create Issue
-            </Link>
+            </Link> */}
             <div className="flex items-center space-x-1">
               <NotificationDropdown />
               {user && (

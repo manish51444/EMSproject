@@ -75,4 +75,3 @@ export const checkProjectLead = async (req, res, next) => {
     return sendErrorResponse(res, 500, 'Failed to check project lead access', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
   }
 };
-

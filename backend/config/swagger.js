@@ -4,7 +4,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Paarsiv Project Management API',
+      title: 'EMS Project Management API',
       version: '1.0.0',
       description: 'A comprehensive REST API for project and issue management',
       contact: {

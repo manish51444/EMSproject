@@ -41,7 +41,7 @@ const AccountDetails = () => {
             <div className="w-10 h-10 bg-primary-600 rounded flex items-center justify-center mr-2">
               <span className="text-white font-bold text-xl">P</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Paarsiv</h1>
+            <h1 className="text-2xl font-bold text-gray-900">EMS</h1>
           </div>
           <div className="flex items-center justify-center mb-4">
             <CheckCircle2 className="w-5 h-5 text-gray-500 mr-2" />

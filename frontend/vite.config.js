@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'Logo.png'],
       manifest: {
-        name: 'Paarsiv - Project Management',
-        short_name: 'Paarsiv',
+        name: 'EMS - Project Management',
+        short_name: 'EMS',
         description: 'Jira-like project management system',
         theme_color: '#0d9488',
         background_color: '#ffffff',

@@ -12,6 +12,7 @@ import OfflineIndicator from './components/common/OfflineIndicator';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import SignUp from './pages/SignUp';
+import Home from './pages/Home';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import AccountDetails from './pages/AccountDetails';
@@ -49,7 +50,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-gray-500">Loading...</div>
       </div>
     );
@@ -63,7 +64,7 @@ const AdminRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-gray-500">Loading...</div>
       </div>
     );
@@ -81,14 +82,14 @@ const RootRedirect = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-gray-500">Loading...</div>
       </div>
     );
   }
 
-  // If user is logged in, redirect to dashboard, otherwise to login
-  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+  // If user is logged in, redirect to dashboard, otherwise to home
+  return <Navigate to={user ? "/dashboard" : "/home"} replace />;
 };
 
 const AuthLogoutListener = () => {
@@ -107,7 +108,7 @@ const Layout = ({ children }) => {
   return (
     <div className="flex min-h-screen">
       <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex flex-col flex-1 min-w-0">
         <Navbar />
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
@@ -132,12 +133,13 @@ function App() {
             <PWAInstallPrompt />
             <AuthLogoutListener />
             <Routes>
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="/home" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route path="/" element={<RootRedirect />} />
               <Route path="/account-details" element={<ProtectedRoute><Layout><AccountDetails /></Layout></ProtectedRoute>} />
               <Route
                 path="/settings"

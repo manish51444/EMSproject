@@ -36,12 +36,12 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
-            <img src="/Logo.png" alt="Paarsiv" className="w-10 h-10 object-contain mr-2" />
-            <h1 className="text-2xl font-bold text-[#0e2b3d]">Paarsiv</h1>
+            <img src="/Logo.png" alt="PMS" className="w-10 h-10 object-contain mr-2" />
+            <h1 className="text-2xl font-bold text-[#0e2b3d]">PMS</h1>
           </div>
-          <h2 className="text-2xl font-bold text-[#0e2b3d]">Sign in to Paarsiv</h2>
+          <h2 className="text-2xl font-bold text-[#0e2b3d]">Sign in to PMS</h2>
           <p className="text-sm text-[#666]">Welcome back! Please enter your details.</p>
-        </div>
+          </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -103,7 +103,12 @@ const Login = () => {
               Sign in
             </button>
           </div>
-         
+          <p className="text-center text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-[#1cca9b] hover:text-[#18b58a] font-medium">
+              Sign up
+            </Link>
+          </p>
         </form>
       </div>
     </div>

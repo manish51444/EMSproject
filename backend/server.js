@@ -157,7 +157,7 @@ app.use('/api/uploads', express.static(join(__dirname, 'uploads')));
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Paarsiv API Documentation',
+  customSiteTitle: 'EMS API Documentation',
 }));
 
 // Routes

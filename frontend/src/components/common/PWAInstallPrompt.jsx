@@ -85,7 +85,7 @@ const PWAInstallPrompt = () => {
               <Smartphone className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Install Paarsiv</h3>
+              <h3 className="font-semibold text-gray-900">Install EMS</h3>
               <p className="text-sm text-gray-600">Install app for better experience</p>
             </div>
           </div>

@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Filter, AlertCircle, Clock } from 'lucide-react';
+import { Plus, Filter, AlertCircle, Clock,ArchiveX ,ListChecks,Layers   } from 'lucide-react';
+
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { getIssues, getProjects, createIssue, getMyStats } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import IssueModal from '../components/issues/IssueModal';
 import SkeletonLoader from '../components/common/SkeletonLoader';
+import { Layer } from 'recharts';
 
 const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,21 +72,25 @@ const Dashboard = () => {
       label: 'Total Issues',
       value: issues.length || 0,
       color: 'bg-[#1cca9b]',
+      icon:<ArchiveX />,
     },
     {
       label: 'In Progress',
       value: issues.filter((i) => i.status === 'in_progress').length || 0,
       color: 'bg-yellow-500',
+      icon:<Layers/>,
     },
     {
       label: 'Done',
       value: issues.filter((i) => i.status === 'done').length || 0,
       color: 'bg-green-500',
+      icon:<ListChecks />,
     },
     {
       label: 'Projects',
       value: projects.length || 0,
       color: 'bg-purple-500',
+      icon:<Layers />,
     },
   ];
 
@@ -193,7 +199,7 @@ const Dashboard = () => {
                   </p>
                 </div>
                 <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center`}>
-                  <span className="text-white text-xl font-bold">{stat.value}</span>
+             {stat.icon}
                 </div>
               </div>
             </div>

@@ -66,7 +66,7 @@ export const register = async (req, res) => {
       email: normalizedEmail,
       password,
       role: role || 'developer',
-      department: department || null,
+      department: department ? [department] : [], // Convert single department to array
       organization: organization._id,
       resetPasswordToken: hashedToken,
       resetPasswordExpire,
@@ -124,7 +124,8 @@ export const register = async (req, res) => {
       message: 'Registration successful. Please set your password.',
     });
   } catch (error) {
-    sendErrorResponse(res, 500, 'Failed to register user', req.id, process.env.NODE_ENV === 'development' ? { error: error.message } : null);
+    console.error('Registration error:', error);
+    sendErrorResponse(res, 500, 'Failed to register user', req.id, process.env.NODE_ENV === 'development' ? { error: error.message, stack: error.stack } : null);
   }
 };
 

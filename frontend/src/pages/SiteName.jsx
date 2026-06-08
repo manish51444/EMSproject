@@ -33,11 +33,11 @@ const SiteName = () => {
             <div className="w-10 h-10 bg-primary-600 rounded flex items-center justify-center mr-2">
               <span className="text-white font-bold text-xl">P</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Paarsiv</h1>
+            <h1 className="text-2xl font-bold text-gray-900">EMS</h1>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Let's name your site</h2>
           <p className="text-gray-600">
-            Your site name is part of your Paarsiv URL. Most people use their team or company name.
+            Your site name is part of your EMS URL. Most people use their team or company name.
           </p>
         </div>
 

@@ -161,6 +161,26 @@ const Register = () => {
               />
             </div>
             <div>
+              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700">
+                Organization Name *
+              </label>
+              <input
+                id="organizationName"
+                name="organizationName"
+                type="text"
+                required
+                className="input mt-1"
+                value={formData.organizationName}
+                onChange={(e) =>
+                  setFormData({ ...formData, organizationName: e.target.value })
+                }
+                placeholder="Your Company Name"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This will be your organization's unique name
+              </p>
+            </div>
+            <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700">
                 Role
               </label>
